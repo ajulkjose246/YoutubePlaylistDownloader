@@ -5,10 +5,8 @@ import os
 
 app = Flask(__name__)
 
-# Add this configuration for Python Anywhere
-downloads_dir = os.path.join(os.path.expanduser('~'), 'downloads')
-if not os.path.exists(downloads_dir):
-    os.makedirs(downloads_dir)
+# Configure for production
+port = int(os.environ.get("PORT", 8000))
 
 @app.route('/')
 def home():
@@ -24,14 +22,16 @@ def start_download():
     if not playlist_url:
         return jsonify({'error': 'Playlist URL is required'}), 400
     
-    # Start download in background thread
     thread = threading.Thread(
         target=download_playlist,
         args=(playlist_url, resolution, format_type)
     )
-    thread.daemon = True  # Make thread daemon so it doesn't block shutdown
+    thread.daemon = True
     thread.start()
     
     return jsonify({'message': 'Download started successfully'})
 
-# Remove the if __name__ == '__main__' block when deploying to Python Anywhere 
+# Add this for production
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=port)
+    
