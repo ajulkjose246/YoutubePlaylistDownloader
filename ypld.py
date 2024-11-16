@@ -9,28 +9,19 @@ def sanitize_filename(filename):
     return re.sub(r'[<>:"/\\|?*]', '-', filename)
 
 
-def download_playlist(playlist_url, resolution, format_type, download_location, progress_queue):
-    # Check if ffmpeg is available for any downloads (both MP4 and MP3)
-    if os.system("ffmpeg -version") != 0:
-        print("Error: ffmpeg is not installed or not in PATH")
-        print("Please install ffmpeg and add it to your system PATH")
-        print("Download ffmpeg from: https://ffmpeg.org/download.html")
-        return
-
+def download_playlist(playlist_url, resolution, format_type, temp_dir, progress_queue):
     try:
         playlist = Playlist(playlist_url)
         playlist_name = sanitize_filename(playlist.title)
         
-        # Use the selected download location
-        playlist_dir = os.path.join(download_location, playlist_name)
-        if not os.path.exists(playlist_dir):
-            os.makedirs(playlist_dir)
+        # Create playlist directory inside temp directory
+        playlist_dir = os.path.join(temp_dir, playlist_name)
+        os.makedirs(playlist_dir, exist_ok=True)
 
         total_videos = len(playlist.videos)
         
         for index, video in enumerate(playlist.videos, 1):
             try:
-                # Update progress
                 progress = (index - 1) / total_videos * 100
                 progress_queue.put({
                     'progress': round(progress, 1),
@@ -132,7 +123,6 @@ def download_playlist(playlist_url, resolution, format_type, download_location, 
                 print("----------------------------------")
                 continue
         
-        # Signal completion
         progress_queue.put({
             'progress': 100,
             'current_file': 'Download completed!',

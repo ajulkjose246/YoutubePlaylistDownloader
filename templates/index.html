@@ -28,13 +28,6 @@
                 <input type="url" class="form-control" id="playlist_url" required>
             </div>
             <div class="mb-3">
-                <label for="download_location" class="form-label">Download Location</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="download_location" readonly>
-                    <button class="btn btn-outline-secondary" type="button" id="selectFolder">Choose Folder</button>
-                </div>
-            </div>
-            <div class="mb-3">
                 <label for="format_type" class="form-label">Format Type</label>
                 <select class="form-select" id="format_type" required>
                     <option value="mp3">MP3</option>
@@ -65,13 +58,6 @@
     </div>
 
     <script>
-        const formatSelect = document.getElementById('format_type');
-        const resolutionDiv = document.getElementById('resolutionDiv');
-
-        formatSelect.addEventListener('change', function() {
-            resolutionDiv.style.display = this.value === 'mp4' ? 'block' : 'none';
-        });
-
         document.getElementById('downloadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -82,17 +68,17 @@
             
             status.innerHTML = '<div class="alert alert-info">Download started...</div>';
             progressContainer.style.display = 'block';
-            
-            const formData = {
-                playlist_url: document.getElementById('playlist_url').value,
-                format_type: document.getElementById('format_type').value,
-                download_location: document.getElementById('download_location').value,
-                resolution: document.getElementById('format_type').value === 'mp4' 
-                    ? document.getElementById('resolution').value 
-                    : null
-            };
 
             try {
+                const formData = {
+                    playlist_url: document.getElementById('playlist_url').value,
+                    format_type: document.getElementById('format_type').value,
+                    resolution: document.getElementById('format_type').value === 'mp4' 
+                        ? document.getElementById('resolution').value 
+                        : null
+                };
+
+                // Set up SSE for progress updates
                 const eventSource = new EventSource(`/download-progress?playlist_url=${encodeURIComponent(formData.playlist_url)}`);
                 
                 eventSource.onmessage = function(event) {
@@ -100,9 +86,15 @@
                     progressBar.style.width = `${data.progress}%`;
                     progressBar.textContent = `${data.progress}%`;
                     currentFile.textContent = data.current_file;
+
+                    if (data.completed) {
+                        eventSource.close();
+                        // Trigger download of the zip file
+                        window.location.href = `/download-file?playlist_url=${encodeURIComponent(formData.playlist_url)}`;
+                    }
                 };
 
-                const response = await fetch('/download', {
+                const response = await fetch('/start-download', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -112,26 +104,14 @@
 
                 const data = await response.json();
                 
-                if (response.ok) {
-                    status.innerHTML = '<div class="alert alert-success">Download completed successfully!</div>';
-                    eventSource.close();
-                } else {
+                if (!response.ok) {
                     status.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
                     eventSource.close();
                 }
             } catch (error) {
-                status.innerHTML = '<div class="alert alert-danger">An error occurred while starting the download.</div>';
+                console.error('Error:', error);
+                status.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
                 progressContainer.style.display = 'none';
-            }
-        });
-
-        document.getElementById('selectFolder').addEventListener('click', async function() {
-            try {
-                const dirHandle = await window.showDirectoryPicker();
-                document.getElementById('download_location').value = dirHandle.name;
-                window.downloadDirHandle = dirHandle;
-            } catch (err) {
-                console.error('Error selecting folder:', err);
             }
         });
     </script>
