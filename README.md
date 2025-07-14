@@ -13,10 +13,3 @@ This project is a Python-based YouTube Playlist Downloader that lets users downl
 - **Python 3.7+**
 - **ffmpeg**: Required for MP4 downloads and merging audio and video streams.
 
-
-
-Dear Ma’am,
-
-I would like to inform you that I had my convocation today, which concluded around 5:15 PM. Currently, I am in Kanjirappally, and due to heavy rains here, I am planning to travel to Alappuzha tomorrow. There is a train scheduled from Alappuzha to Trivandrum at 5:50 PM.
-
-I would like to kindly request leave for tomorrow, considering the circumstances.
